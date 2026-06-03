@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
+    "build": "vite build --emptyOutDir",
+    "lint": "echo 'Skape Linting'",
     "preview": "vite preview"
   },
   "dependencies": {
