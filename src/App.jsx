@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   PlusCircle, Trash2, Edit3, Dog, User, Phone, Mail, 
-  Layers, Tag, Calendar, Image, Users, CheckCircle, ListPlus, Search 
+  Layers, Tag, Calendar, Users, CheckCircle, ListPlus, Search 
 } from 'lucide-react';
 
 const API_URL = 'https://backend-mascotas-h3zn.onrender.com/api/';
@@ -9,8 +9,6 @@ const API_URL = 'https://backend-mascotas-h3zn.onrender.com/api/';
 export default function App() {
   const [duenos, setDuenos] = useState([]);
   const [mascotas, setMascotas] = useState([]);
-  
-  // 🔥 Iniciar siempre registrando al dueño
   const [tab, setTab] = useState('duenos');
 
   // Formularios
@@ -19,7 +17,7 @@ export default function App() {
   const [imagenFile, setImagenFile] = useState(null);
   const [editId, setEditId] = useState(null);
 
-  // 🔍 Estados para el buscador de dueños en tiempo real
+  // Estados para el buscador de dueños en tiempo real
   const [busquedaDueno, setBusquedaDueno] = useState('');
   const [mostrarDropdown, setMostrarDropdown] = useState(false);
 
@@ -28,12 +26,11 @@ export default function App() {
     fetchMascotas();
   }, []);
 
-  const fetchDuenos = () => fetch(API_URL + 'duenos/').then(res => res.json()).then(data => setDuenos(data));
-  const fetchMascotas = () => fetch(API_URL + 'mascotas/').then(res => res.json()).then(data => setMascotas(data));
+  const fetchDuenos = () => fetch(API_URL + 'duenos/').then(res => res.json()).then(data => setDuenos(data)).catch(err => console.error(err));
+  const fetchMascotas = () => fetch(API_URL + 'mascotas/').then(res => res.json()).then(data => setMascotas(data)).catch(err => console.error(err));
 
   const handleSaveDueno = async (e) => {
     e.preventDefault();
-    
     const baseClean = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
     const url = editId ? `${baseClean}/duenos/${editId}/` : `${baseClean}/duenos/`;
     const method = editId ? 'PUT' : 'POST';
@@ -51,20 +48,17 @@ export default function App() {
         fetchDuenos();
         alert("¡Dueño guardado correctamente en MySQL!");
       } else {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("Error del servidor Django:", errorData);
-        alert(`Django rechazó la solicitud: ${response.status} - Ver consola`);
+        alert("Django rechazó la solicitud del dueño. Revisa la configuración.");
       }
     } catch (err) {
-      console.error("Error de conexión:", err);
-      alert("No se pudo conectar con el servidor backend. ¿Está corriendo Django?");
+      console.error(err);
     }
   };
 
   const handleSaveMascota = async (e) => {
     e.preventDefault();
     if (!formMascota.dueno) {
-      alert("Por favor, busca y selecciona un dueño válido utilizando el buscador.");
+      alert("Por favor, selecciona un dueño válido de la lista desplegable.");
       return;
     }
 
@@ -73,11 +67,13 @@ export default function App() {
     formData.append('especie', formMascota.especie);
     formData.append('raza', formMascota.raza);
     formData.append('edad', formMascota.edad);
-    formData.append('dueno', formMascota.dueno);
+    formData.append('dueno', formMascota.dueno); // Envía el ID numérico del dueño (Ej: 1)
     
-    // 🔥 CORRECCIÓN: Se envía como 'fotografia' que es el campo del modelo en Django
+    // Al probar con Django, a veces el campo se llama 'fotografia' o 'imagen'. 
+    // Enviamos ambos para asegurar compatibilidad con tu modelo
     if (imagenFile) {
       formData.append('fotografia', imagenFile);
+      formData.append('imagen', imagenFile);
     }
 
     const url = editId ? `${API_URL}mascotas/${editId}/` : `${API_URL}mascotas/`;
@@ -95,9 +91,11 @@ export default function App() {
         setImagenFile(null);
         setEditId(null);
         fetchMascotas();
-        alert("¡Mascota y fotografía guardadas con éxito!");
+        alert("¡Mascota guardada con éxito!");
       } else {
-        alert("Error al guardar la mascota en el servidor.");
+        const errorData = await response.json().catch(() => ({}));
+        console.log("Error detallado de Django:", errorData);
+        alert(`Error del servidor: ${JSON.stringify(errorData)}`);
       }
     } catch (error) {
       console.error("Error de red:", error);
@@ -112,12 +110,11 @@ export default function App() {
   };
 
   const duenosFiltrados = duenos.filter(d => 
-    d.nombre.toLowerCase().includes(busquedaDueno.toLowerCase())
+    d.nombre && d.nombre.toLowerCase().includes(busquedaDueno.toLowerCase())
   );
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 font-sans antialiased">
-      {/* Navbar con gradiente premium */}
       <header className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 text-white shadow-lg sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3">
@@ -138,8 +135,6 @@ export default function App() {
       </header>
 
       <main className="container mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* COLUMNA FORMULARIO */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 h-fit">
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-700">
             {editId ? <Edit3 size={20}/> : <PlusCircle size={20}/>} {editId ? 'Editar' : 'Registrar'} {tab === 'mascotas' ? 'Mascota' : 'Dueño'}
@@ -149,15 +144,15 @@ export default function App() {
             <form onSubmit={handleSaveDueno} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Nombre</label>
-                <input type="text" className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="Ej: Carlos Mendoza" value={formDueno.nombre} onChange={e => setFormDueno({...formDueno, nombre: e.target.value})} required />
+                <input type="text" className="w-full border p-2 rounded-lg" placeholder="Ej: Carlos Mendoza" value={formDueno.nombre} onChange={e => setFormDueno({...formDueno, nombre: e.target.value})} required />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Teléfono</label>
-                <input type="text" className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="Ej: 987654321" value={formDueno.telefono} onChange={e => setFormDueno({...formDueno, telefono: e.target.value})} required />
+                <input type="text" className="w-full border p-2 rounded-lg" placeholder="Ej: 987654321" value={formDueno.telefono} onChange={e => setFormDueno({...formDueno, telefono: e.target.value})} required />
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Correo Electrónico</label>
-                <input type="email" className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="correo@ejemplo.com" value={formDueno.correo} onChange={e => setFormDueno({...formDueno, correo: e.target.value})} required />
+                <input type="email" className="w-full border p-2 rounded-lg" placeholder="correo@ejemplo.com" value={formDueno.correo} onChange={e => setFormDueno({...formDueno, correo: e.target.value})} required />
               </div>
               <button type="submit" className="w-full bg-emerald-600 text-white py-2 rounded-lg font-semibold hover:bg-emerald-700 transition">Guardar Dueño</button>
             </form>
@@ -165,21 +160,21 @@ export default function App() {
             <form onSubmit={handleSaveMascota} className="space-y-4" encType="multipart/form-data">
               <div>
                 <label className="block text-sm font-medium mb-1">Nombre de la Mascota</label>
-                <input type="text" className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="Ej: Toby" value={formMascota.nombre} onChange={e => setFormMascota({...formMascota, nombre: e.target.value})} required />
+                <input type="text" className="w-full border p-2 rounded-lg" placeholder="Ej: Toby" value={formMascota.nombre} onChange={e => setFormMascota({...formMascota, nombre: e.target.value})} required />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-sm font-medium mb-1">Especie</label>
-                  <input type="text" placeholder="Ej: Perro" className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" value={formMascota.especie} onChange={e => setFormMascota({...formMascota, especie: e.target.value})} required />
+                  <input type="text" placeholder="Ej: Perro" className="w-full border p-2 rounded-lg" value={formMascota.especie} onChange={e => setFormMascota({...formMascota, especie: e.target.value})} required />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">Raza</label>
-                  <input type="text" placeholder="Ej: Boxer" className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" value={formMascota.raza} onChange={e => setFormMascota({...formMascota, raza: e.target.value})} required />
+                  <input type="text" placeholder="Ej: Boxer" className="w-full border p-2 rounded-lg" value={formMascota.raza} onChange={e => setFormMascota({...formMascota, raza: e.target.value})} required />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Edad (Años)</label>
-                <input type="number" className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="Ej: 3" value={formMascota.edad} onChange={e => setFormMascota({...formMascota, edad: e.target.value})} required />
+                <input type="number" className="w-full border p-2 rounded-lg" placeholder="Ej: 3" value={formMascota.edad} onChange={e => setFormMascota({...formMascota, edad: e.target.value})} required />
               </div>
               
               <div className="relative">
@@ -187,7 +182,7 @@ export default function App() {
                 <div className="relative flex items-center">
                   <input 
                     type="text" 
-                    className="w-full border p-2 pr-8 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" 
+                    className="w-full border p-2 pr-8 rounded-lg" 
                     placeholder="Escribe para buscar dueño..." 
                     value={busquedaDueno}
                     onFocus={() => setMostrarDropdown(true)}
@@ -226,7 +221,7 @@ export default function App() {
 
                 {formMascota.dueno && (
                   <p className="text-xs text-emerald-600 font-medium mt-1 flex items-center gap-1">
-                    <CheckCircle size={12} /> Dueño seleccionado correctamente (ID: {formMascota.dueno})
+                    <CheckCircle size={12} /> Dueño vinculado (ID: {formMascota.dueno})
                   </p>
                 )}
               </div>
@@ -240,7 +235,6 @@ export default function App() {
           )}
         </div>
 
-        {/* COLUMNA DE CONTENIDO (LISTADOS) */}
         <div className="lg:col-span-2 space-y-6">
           {tab === 'mascotas' ? (
             <div>
@@ -250,57 +244,48 @@ export default function App() {
               </div>
               
               {mascotas.length === 0 ? (
-                <div className="bg-white p-12 rounded-2xl border text-center border-slate-200/60 text-slate-400 font-medium">
+                <div className="bg-white p-12 rounded-2xl border text-center text-slate-400 font-medium">
                   <Dog className="w-12 h-12 mx-auto mb-3 opacity-30" /> No hay mascotas registradas todavía.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {mascotas.map(m => (
-                    <div key={m.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 flex flex-col justify-between hover:shadow-md transition-all group">
-                      <div className="relative overflow-hidden h-48 bg-slate-100">
-                        {/* 🔥 Inyección dinámica de URL directo desde la base de datos o Cloudinary */}
-                        <img 
-                          src={m.fotografia || m.imagen} 
-                          alt={m.nombre} 
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                          onError={(e) => {
-                            if (e.target.src && !e.target.src.includes('http')) {
-                              e.target.src = `https://backend-mascotas-h3zn.onrender.com${m.fotografia || m.imagen}`;
-                            }
-                          }}
-                        />
-                        <span className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm text-emerald-800 text-xs px-3 py-1 rounded-full font-black uppercase shadow-sm tracking-wider flex items-center gap-1">
-                          <Layers size={10} /> {m.especie}
-                        </span>
-                      </div>
-                      <div className="p-5">
-                        <h4 className="text-xl font-extrabold text-slate-800 mb-2">{m.nombre}</h4>
-                        
-                        <div className="grid grid-cols-2 gap-y-2 gap-x-1 text-sm text-slate-600 bg-slate-50 p-3 rounded-xl mb-4">
-                          <div className="flex items-center gap-1.5 text-xs">
-                            <Tag size={14} className="text-slate-400" /> <span><strong>Raza:</strong> {m.raza}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs">
-                            <Calendar size={14} className="text-slate-400" /> <span><strong>Edad:</strong> {m.edad} añ.</span>
-                          </div>
+                  {mascotas.map(m => {
+                    const urlImagen = m.fotografia || m.imagen || '';
+                    return (
+                      <div key={m.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 flex flex-col justify-between hover:shadow-md transition-all group">
+                        <div className="relative overflow-hidden h-48 bg-slate-100">
+                          <img 
+                            src={urlImagen.startsWith('http') ? urlImagen : `https://backend-mascotas-h3zn.onrender.com${urlImagen}`} 
+                            alt={m.nombre} 
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?q=80&w=500'; }}
+                          />
+                          <span className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm text-emerald-800 text-xs px-3 py-1 rounded-full font-black uppercase tracking-wider flex items-center gap-1">
+                            {m.especie}
+                          </span>
                         </div>
-
-                        <div className="flex items-center gap-2 text-xs bg-teal-50 text-teal-800 font-semibold px-3 py-2 rounded-xl">
-                          <User size={14} className="text-teal-600" /> 
-                          <span><strong>Dueño:</strong> {m.dueno_nombre || 'Asignado'}</span>
-                        </div>
-                        
-                        <div className="mt-5 pt-3 border-t border-slate-100 flex justify-end gap-2">
-                          <button onClick={() => { setEditId(m.id); setFormMascota(m); setBusquedaDueno(m.dueno_nombre || ''); }} className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                            <Edit3 size={14}/> Editar
-                          </button>
-                          <button onClick={() => handleDelete('mascotas', m.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg transition-colors">
-                            <Trash2 size={14}/> Remover
-                          </button>
+                        <div className="p-5">
+                          <h4 className="text-xl font-extrabold text-slate-800 mb-2">{m.nombre}</h4>
+                          <div className="grid grid-cols-2 gap-y-2 gap-x-1 text-sm text-slate-600 bg-slate-50 p-3 rounded-xl mb-4">
+                            <span className="text-xs"><strong>Raza:</strong> {m.raza}</span>
+                            <span className="text-xs"><strong>Edad:</strong> {m.edad} añ.</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs bg-teal-50 text-teal-800 font-semibold px-3 py-2 rounded-xl">
+                            <User size={14} className="text-teal-600" /> 
+                            <span><strong>Dueño:</strong> {m.dueno_nombre || 'Asignado'}</span>
+                          </div>
+                          <div className="mt-5 pt-3 border-t border-slate-100 flex justify-end gap-2">
+                            <button onClick={() => { setEditId(m.id); setFormMascota(m); setBusquedaDueno(m.dueno_nombre || ''); }} className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-blue-600 hover:bg-blue-50 rounded-lg">
+                              Editar
+                            </button>
+                            <button onClick={() => handleDelete('mascotas', m.id)} className="flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 rounded-lg">
+                              Remover
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -310,7 +295,6 @@ export default function App() {
                 <Users className="text-teal-600 w-5 h-5" />
                 <h3 className="text-lg font-bold text-slate-700">Directorio General de Clientes</h3>
               </div>
-              
               <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -325,25 +309,21 @@ export default function App() {
                       <tr key={d.id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="p-4 pl-6 font-bold text-slate-800 flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center text-white text-xs font-bold uppercase">
-                            {d.nombre.charAt(0)}
+                            {d.nombre ? d.nombre.charAt(0) : 'U'}
                           </div>
                           {d.nombre}
                         </td>
                         <td className="p-4 space-y-1 text-xs text-slate-600">
-                          <div className="flex items-center gap-1.5">
-                            <Phone size={13} className="text-slate-400"/> <span className="font-medium">{d.telefono}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <Mail size={13} className="text-slate-400"/> <span>{d.correo}</span>
-                          </div>
+                          <div><span className="font-medium">{d.telefono}</span></div>
+                          <div><span>{d.correo}</span></div>
                         </td>
                         <td className="p-4">
                           <div className="flex justify-center gap-3">
-                            <button onClick={() => { setEditId(d.id); setFormDueno(d); }} className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors" title="Editar Dueño">
-                              <Edit3 size={15}/>
+                            <button onClick={() => { setEditId(d.id); setFormDueno(d); }} className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl">
+                              Editar
                             </button>
-                            <button onClick={() => handleDelete('duenos', d.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors" title="Eliminar Dueño">
-                              <Trash2 size={15}/>
+                            <button onClick={() => handleDelete('duenos', d.id)} className="p-2 text-red-600 hover:bg-red-50 rounded-xl">
+                              Eliminar
                             </button>
                           </div>
                         </td>
