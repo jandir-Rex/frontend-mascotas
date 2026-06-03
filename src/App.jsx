@@ -1,70 +1,11 @@
-
-Claude terminó la respuesta
-
-import React, { useState, useEffect, useRef } from 'react'; import { PlusCircle, Search, User, Dog, Calendar, Tag, Users, Trash2, Edit3, CheckCircle, AlertCircle, Loader2, X, Save } from 'lucide-react'; const API_BASE_URL = 'https://backend-mascotas-h3zn.onrender.com'; export default f
-
-pasted
-
-bro este es mi app.jsx
-ayudame a que tenga los crud completos bien hechs, ya que van para deploy porfa
-
-17:43
-Viendo tu código, está bastante completo ya. Déjame identificar qué falta exactamente:
-
-P: ¿Qué le falta según tú? Así priorizo mejor (Seleccione todas las que correspondan)
-R: el correo no puede editarse, y cuando quiero editar lo hago letra por letra por que el curso desaparece y tengo que clicar en el campo que deseo seguir editando, osea hago letra por letra
-
-P: ¿El backend ya devuelve dueno_nombre en el endpoint de mascotas?
-R: No estoy seguro
-
-17:45
-Entendido, son dos bugs claros:
-
-Cursor que salta — clásico problema de re-render que destruye el foco del input
-Email no editable — falta el campo en el modal de editar mascota (o está bloqueado)
-Déjame revisar el código y arreglarlo:
-
-El problema del cursor es un bug clásico de React: el Modal está definido como componente dentro del componente padre, así que cada render recrea el componente modal y React desmonta/monta el DOM, perdiendo el foco. La solución es sacar Modal fuera, y usar useCallback + useRef correctamente.
-
-Aquí el App.jsx corregido con todos los fixes:
-
-
-Creó un archivo, archivo leído
-Creó un archivo, archivo leído
-
-App.jsx con bugs corregidos: cursor en inputs y email editable
-App.jsx
-
-Presented file
-Listo
-Los dos bugs corregidos:
-
-Bug del cursor (el principal) — el componente Modal estaba definido dentro de App. Eso hace que React lo trate como una función nueva en cada render, destruye el nodo del DOM y lo recrea, y el input pierde el foco después de cada tecla. Al moverlo fuera de App (línea 13), React lo reconoce como el mismo componente entre renders y el foco se mantiene.
-
-Email no editable — en el modal de editar dueño simplemente faltaba el campo. Tenías el estado editEmail declarado y enviado al backend, pero el <input> correspondiente nunca estaba en el JSX del modal. Ya está incluido y se carga con el valor actual al abrir el modal.
-
-
-App
-Código · JSX 
-
-¿Quieres recibir una notificación cuando Claude responda?
-
-
-
-
-Claude es IA y puede cometer errores. Por favor, verifica nuevamente las respuestas.
-
-
-raw
-App · JSX
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   PlusCircle, Search, User, Dog, Calendar, Tag, Users,
   Trash2, Edit3, CheckCircle, AlertCircle, Loader2, X, Save
 } from 'lucide-react';
- 
+
 const API_BASE_URL = 'https://backend-mascotas-h3zn.onrender.com';
- 
+
 // ✅ FIX PRINCIPAL: Modal definido FUERA del componente App
 // Si está adentro, cada re-render recrea la función → React desmonta/monta
 // el DOM completo del modal → el input pierde el foco después de cada tecla
@@ -86,7 +27,7 @@ const Modal = ({ titulo, onClose, children }) => (
     </div>
   </div>
 );
- 
+
 export default function App() {
   const [mascotas, setMascotas] = useState([]);
   const [duenos, setDuenos] = useState([]);
@@ -95,7 +36,7 @@ export default function App() {
   const [tab, setTab] = useState('mascotas');
   const [notificacion, setNotificacion] = useState({ show: false, mensaje: '', tipo: '' });
   const submitLock = useRef(false);
- 
+
   // ── Formulario nueva mascota ──────────────────────────────────────────────
   const [nombreMascota, setNombreMascota] = useState('');
   const [especie, setEspecie] = useState('');
@@ -106,12 +47,12 @@ export default function App() {
   const [foto, setFoto] = useState(null);
   const [searchDueno, setSearchDueno] = useState('');
   const [showDuenoDropdown, setShowDuenoDropdown] = useState(false);
- 
+
   // ── Formulario nuevo dueño ────────────────────────────────────────────────
   const [nombreDueno, setNombreDueno] = useState('');
   const [telefono, setTelefono] = useState('');
   const [email, setEmail] = useState('');
- 
+
   // ── Modal editar mascota ──────────────────────────────────────────────────
   const [modalMascota, setModalMascota] = useState(false);
   const [editMascota, setEditMascota] = useState(null);
@@ -125,7 +66,7 @@ export default function App() {
   const [editShowDropdown, setEditShowDropdown] = useState(false);
   const [editFoto, setEditFoto] = useState(null);
   const [guardandoMascota, setGuardandoMascota] = useState(false);
- 
+
   // ── Modal editar dueño ────────────────────────────────────────────────────
   const [modalDueno, setModalDueno] = useState(false);
   const [editDueno, setEditDueno] = useState(null);
@@ -133,9 +74,9 @@ export default function App() {
   const [editTelefono, setEditTelefono] = useState('');
   const [editEmail, setEditEmail] = useState('');  // ✅ campo email en edición
   const [guardandoDueno, setGuardandoDueno] = useState(false);
- 
+
   useEffect(() => { fetchData(); }, []);
- 
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -151,12 +92,12 @@ export default function App() {
       setLoading(false);
     }
   };
- 
+
   const mostrarAlerta = (mensaje, tipo) => {
     setNotificacion({ show: true, mensaje, tipo });
     setTimeout(() => setNotificacion({ show: false, mensaje: '', tipo: '' }), 4000);
   };
- 
+
   // ── Handlers dueño ────────────────────────────────────────────────────────
   const handleGuardarDueno = async (e) => {
     e.preventDefault();
@@ -184,7 +125,7 @@ export default function App() {
       submitLock.current = false;
     }
   };
- 
+
   const handleAbrirEditarDueno = (d) => {
     setEditDueno(d);
     setEditNombreDueno(d.nombre || '');
@@ -192,7 +133,7 @@ export default function App() {
     setEditEmail(d.email || '');   // ✅ se carga el email existente
     setModalDueno(true);
   };
- 
+
   const handleGuardarEditarDueno = async (e) => {
     e.preventDefault();
     if (guardandoDueno) return;
@@ -218,7 +159,7 @@ export default function App() {
       setGuardandoDueno(false);
     }
   };
- 
+
   const handleEliminarDueno = async (id) => {
     if (!confirm('¿Seguro que deseas eliminar este dueño?')) return;
     try {
@@ -227,7 +168,7 @@ export default function App() {
       else { mostrarAlerta('No se pudo eliminar — puede tener mascotas asignadas', 'error'); }
     } catch { mostrarAlerta('Error de red', 'error'); }
   };
- 
+
   // ── Handlers mascota ──────────────────────────────────────────────────────
   const handleGuardarMascota = async (e) => {
     e.preventDefault();
@@ -258,7 +199,7 @@ export default function App() {
       submitLock.current = false;
     }
   };
- 
+
   const handleAbrirEditarMascota = (m) => {
     setEditMascota(m);
     setEditNombre(m.nombre || '');
@@ -271,7 +212,7 @@ export default function App() {
     setEditFoto(null);
     setModalMascota(true);
   };
- 
+
   const handleGuardarEditarMascota = async (e) => {
     e.preventDefault();
     if (guardandoMascota) return;
@@ -297,7 +238,7 @@ export default function App() {
       setGuardandoMascota(false);
     }
   };
- 
+
   const handleEliminarMascota = async (id) => {
     if (!confirm('¿Seguro que deseas remover esta mascota?')) return;
     try {
@@ -305,7 +246,7 @@ export default function App() {
       if (res.ok) { mostrarAlerta('Mascota removida', 'success'); fetchData(); }
     } catch { mostrarAlerta('Error de red', 'error'); }
   };
- 
+
   // ── Filtros dropdown ──────────────────────────────────────────────────────
   const duenosFiltrados = duenos.filter(d =>
     d.nombre.toLowerCase().includes(searchDueno.toLowerCase())
@@ -313,11 +254,11 @@ export default function App() {
   const duenosEditFiltrados = duenos.filter(d =>
     d.nombre.toLowerCase().includes(editSearchDueno.toLowerCase())
   );
- 
+
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800">
- 
+
       {/* Header */}
       <header className="bg-teal-700 text-white shadow-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -345,7 +286,7 @@ export default function App() {
           </nav>
         </div>
       </header>
- 
+
       {/* Notificación */}
       {notificacion.show && (
         <div className="fixed top-20 right-4 z-50">
@@ -357,7 +298,7 @@ export default function App() {
           </div>
         </div>
       )}
- 
+
       {/* ── Modal Editar Mascota ─────────────────────────────────────────── */}
       {modalMascota && editMascota && (
         <Modal titulo="Editar Mascota" onClose={() => setModalMascota(false)}>
@@ -469,7 +410,7 @@ export default function App() {
           </form>
         </Modal>
       )}
- 
+
       {/* ── Modal Editar Dueño ───────────────────────────────────────────── */}
       {modalDueno && editDueno && (
         <Modal titulo="Editar Dueño" onClose={() => setModalDueno(false)}>
@@ -522,7 +463,7 @@ export default function App() {
           </form>
         </Modal>
       )}
- 
+
       {/* ── Main ─────────────────────────────────────────────────────────── */}
       <main className="max-w-7xl mx-auto px-4 py-8">
         {loading ? (
@@ -531,7 +472,7 @@ export default function App() {
             <p className="text-slate-500 font-medium">Sincronizando con el servidor remoto...</p>
           </div>
         ) : tab === 'mascotas' ? (
- 
+
           /* ── Tab Mascotas ────────────────────────────────────────────── */
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Formulario */}
@@ -645,7 +586,7 @@ export default function App() {
                 </button>
               </form>
             </div>
- 
+
             {/* Lista mascotas */}
             <div className="lg:col-span-2 space-y-4">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 border-b pb-2">
@@ -726,9 +667,9 @@ export default function App() {
               )}
             </div>
           </div>
- 
+
         ) : (
- 
+
           /* ── Tab Dueños ──────────────────────────────────────────────── */
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Formulario */}
@@ -776,7 +717,7 @@ export default function App() {
                 </button>
               </form>
             </div>
- 
+
             {/* Tabla dueños */}
             <div className="lg:col-span-2 space-y-4">
               <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2 border-b pb-2">
@@ -835,4 +776,3 @@ export default function App() {
     </div>
   );
 }
- 
