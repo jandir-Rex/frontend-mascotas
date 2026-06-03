@@ -4,14 +4,13 @@ import {
   Layers, Tag, Calendar, Image, Users, CheckCircle, ListPlus, Search 
 } from 'lucide-react';
 
-// Si necesitas FormularioMascota, se importa directo desde src porque está al lado de App.jsx:
 const API_URL = 'https://backend-mascotas-h3zn.onrender.com/api/';
 
 export default function App() {
   const [duenos, setDuenos] = useState([]);
   const [mascotas, setMascotas] = useState([]);
   
-  // 🔥 SOLUCIÓN 1: Cambiamos el estado inicial a 'duenos' para iniciar siempre registrando al dueño
+  // 🔥 Iniciar siempre registrando al dueño
   const [tab, setTab] = useState('duenos');
 
   // Formularios
@@ -35,7 +34,6 @@ export default function App() {
   const handleSaveDueno = async (e) => {
     e.preventDefault();
     
-    // Limpiamos posibles problemas de doble barra en la URL
     const baseClean = API_URL.endsWith('/') ? API_URL.slice(0, -1) : API_URL;
     const url = editId ? `${baseClean}/duenos/${editId}/` : `${baseClean}/duenos/`;
     const method = editId ? 'PUT' : 'POST';
@@ -76,17 +74,34 @@ export default function App() {
     formData.append('raza', formMascota.raza);
     formData.append('edad', formMascota.edad);
     formData.append('dueno', formMascota.dueno);
-    if (imagenFile) formData.append('imagen', imagenFile);
+    
+    // 🔥 CORRECCIÓN: Se envía como 'fotografia' que es el campo del modelo en Django
+    if (imagenFile) {
+      formData.append('fotografia', imagenFile);
+    }
 
     const url = editId ? `${API_URL}mascotas/${editId}/` : `${API_URL}mascotas/`;
     const method = editId ? 'PATCH' : 'POST';
 
-    await fetch(url, { method: method, body: formData });
-    setFormMascota({ nombre: '', especie: '', raza: '', edad: '', dueno: '' });
-    setBusquedaDueno(''); // Resetear el texto del buscador
-    setImagenFile(null);
-    setEditId(null);
-    fetchMascotas();
+    try {
+      const response = await fetch(url, { 
+        method: method, 
+        body: formData 
+      });
+
+      if (response.ok) {
+        setFormMascota({ nombre: '', especie: '', raza: '', edad: '', dueno: '' });
+        setBusquedaDueno(''); 
+        setImagenFile(null);
+        setEditId(null);
+        fetchMascotas();
+        alert("¡Mascota y fotografía guardadas con éxito!");
+      } else {
+        alert("Error al guardar la mascota en el servidor.");
+      }
+    } catch (error) {
+      console.error("Error de red:", error);
+    }
   };
 
   const handleDelete = async (endpoint, id) => {
@@ -96,7 +111,6 @@ export default function App() {
     }
   };
 
-  // ⚡ FILTRADO EN TIEMPO REAL: Filtra los dueños según lo que digita el usuario
   const duenosFiltrados = duenos.filter(d => 
     d.nombre.toLowerCase().includes(busquedaDueno.toLowerCase())
   );
@@ -113,7 +127,6 @@ export default function App() {
             <h1 className="text-2xl font-black tracking-tight">VetSystem <span className="text-emerald-200 font-light text-xl">Pro</span></h1>
           </div>
           <nav className="flex bg-black/10 p-1.5 rounded-xl border border-white/10">
-            {/* Mantuvimos tus dos pestañas pero interactúan fluidamente */}
             <button onClick={() => { setTab('duenos'); setEditId(null); }} className={`flex items-center gap-2 px-5 py-2 rounded-lg font-semibold text-sm transition-all duration-200 ${tab === 'duenos' ? 'bg-white text-teal-700 shadow-sm' : 'hover:bg-white/10 text-white'}`}>
               <Users size={16} /> Dueños
             </button>
@@ -169,7 +182,6 @@ export default function App() {
                 <input type="number" className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" placeholder="Ej: 3" value={formMascota.edad} onChange={e => setFormMascota({...formMascota, edad: e.target.value})} required />
               </div>
               
-              {/* 🚀 SOLUCIÓN 2: BUSCADOR DE DUEÑO EN TIEMPO REAL */}
               <div className="relative">
                 <label className="block text-sm font-medium mb-1">Dueño Asignado</label>
                 <div className="relative flex items-center">
@@ -181,7 +193,7 @@ export default function App() {
                     onFocus={() => setMostrarDropdown(true)}
                     onChange={e => {
                       setBusquedaDueno(e.target.value);
-                      setFormMascota({...formMascota, dueno: ''}); // Resetea ID seleccionado si vuelve a escribir
+                      setFormMascota({...formMascota, dueno: ''});
                       setMostrarDropdown(true);
                     }}
                     required={!formMascota.dueno}
@@ -189,7 +201,6 @@ export default function App() {
                   <Search className="w-4 h-4 text-slate-400 absolute right-2.5 pointer-events-none" />
                 </div>
 
-                {/* Dropdown flotante inteligente */}
                 {mostrarDropdown && busquedaDueno && (
                   <ul className="absolute z-50 w-full bg-white border border-slate-200 rounded-lg max-h-40 overflow-y-auto shadow-lg mt-1 divide-y divide-slate-100">
                     {duenosFiltrados.length > 0 ? (
@@ -213,7 +224,6 @@ export default function App() {
                   </ul>
                 )}
 
-                {/* Confirmación visual de selección */}
                 {formMascota.dueno && (
                   <p className="text-xs text-emerald-600 font-medium mt-1 flex items-center gap-1">
                     <CheckCircle size={12} /> Dueño seleccionado correctamente (ID: {formMascota.dueno})
@@ -248,11 +258,16 @@ export default function App() {
                   {mascotas.map(m => (
                     <div key={m.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-slate-100 flex flex-col justify-between hover:shadow-md transition-all group">
                       <div className="relative overflow-hidden h-48 bg-slate-100">
-                        {/* 🚀 SOLUCIÓN 3: Inyección dinámica del host de Django para que las imágenes rendericen */}
+                        {/* 🔥 Inyección dinámica de URL directo desde la base de datos o Cloudinary */}
                         <img 
-                          src={m.imagen.startsWith('http') ? m.imagen : `http://localhost:8000${m.imagen}`} 
+                          src={m.fotografia || m.imagen} 
                           alt={m.nombre} 
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                          onError={(e) => {
+                            if (e.target.src && !e.target.src.includes('http')) {
+                              e.target.src = `https://backend-mascotas-h3zn.onrender.com${m.fotografia || m.imagen}`;
+                            }
+                          }}
                         />
                         <span className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm text-emerald-800 text-xs px-3 py-1 rounded-full font-black uppercase shadow-sm tracking-wider flex items-center gap-1">
                           <Layers size={10} /> {m.especie}
