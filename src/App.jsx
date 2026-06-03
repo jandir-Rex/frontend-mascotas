@@ -5,7 +5,6 @@ import {
 } from 'lucide-react';
 
 // Si necesitas FormularioMascota, se importa directo desde src porque está al lado de App.jsx:
-import FormularioMascota from "./FormularioMascota";
 const API_URL = 'https://backend-mascotas-h3zn.onrender.com/api/';
 
 export default function App() {
