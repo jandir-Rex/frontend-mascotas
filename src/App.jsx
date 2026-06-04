@@ -109,7 +109,7 @@ export default function App() {
       const res = await fetch(`${API_BASE_URL}/core/duenos/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre: nombreDueno, telefono, email })
+        body: JSON.stringify({ nombre: nombreDueno, telefono, correo: email })
       });
       if (res.ok) {
         mostrarAlerta('Dueño registrado correctamente', 'success');
@@ -130,7 +130,7 @@ export default function App() {
     setEditDueno(d);
     setEditNombreDueno(d.nombre || '');
     setEditTelefono(d.telefono || '');
-    setEditEmail(d.email || '');   // ✅ se carga el email existente
+    setEditEmail(d.correo || '');   // ✅ se carga el email existente
     setModalDueno(true);
   };
 
@@ -143,7 +143,7 @@ export default function App() {
       const res = await fetch(`${API_BASE_URL}/core/duenos/${editDueno.id}/`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre: editNombreDueno, telefono: editTelefono, email: editEmail })
+        body: JSON.stringify({ nombre: editNombreDueno, telefono: editTelefono, correo: editEmail })
       });
       if (res.ok) {
         mostrarAlerta('Dueño actualizado correctamente', 'success');
@@ -746,7 +746,7 @@ export default function App() {
                           <td className="p-4 font-mono text-xs text-slate-400">#{d.id}</td>
                           <td className="p-4 font-bold text-slate-900">{d.nombre}</td>
                           <td className="p-4 font-medium">{d.telefono}</td>
-                          <td className="p-4 text-slate-500">{d.email || '—'}</td>
+                          <td className="p-4 text-slate-500">{d.correo || '—'}</td>
                           <td className="p-4">
                             <div className="flex justify-end gap-2">
                               <button
