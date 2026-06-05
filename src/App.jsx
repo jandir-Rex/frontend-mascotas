@@ -4,7 +4,7 @@ import {
   Trash2, Edit3, CheckCircle, AlertCircle, Loader2, X, Save
 } from 'lucide-react';
 
-const API_BASE_URL = 'https://backend-mascotas-h3zn.onrender.com';
+const API_BASE_URL = 'https://backend-mascotas-h3zn.onrender.com/';
 
 // ✅ FIX PRINCIPAL: Modal definido FUERA del componente App
 // Si está adentro, cada re-render recrea la función → React desmonta/monta
